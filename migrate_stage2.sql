@@ -1,0 +1,7 @@
+-- Run once on a database created from the Stage 1 schema.
+-- Fresh installations should use schema.sql instead.
+USE swd_auth;
+
+ALTER TABLE users
+    ADD COLUMN role VARCHAR(32) NOT NULL DEFAULT 'user' AFTER password_hash,
+    ADD COLUMN last_login_at TIMESTAMP NULL DEFAULT NULL AFTER created_at;

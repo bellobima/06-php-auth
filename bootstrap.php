@@ -5,6 +5,7 @@ require_once __DIR__ . '/config/config.php';
 require_once __DIR__ . '/src/db.php';
 require_once __DIR__ . '/src/helpers.php';
 require_once __DIR__ . '/src/csrf.php';
+require_once __DIR__ . '/src/auth.php';
 
 error_reporting(E_ALL);
 ini_set('display_errors', APP_ENV === 'development' ? '1' : '0');
@@ -23,4 +24,15 @@ if (session_status() !== PHP_SESSION_ACTIVE) {
     ]);
 
     session_start();
+}
+
+if (isset($_SESSION['user_id'])) {
+    $now = time();
+    $lastActivity = $_SESSION['_last_activity'] ?? $now;
+
+    if (!is_int($lastActivity) || $now - $lastActivity >= 1800) {
+        end_session('You were signed out after 30 minutes of inactivity.');
+    } else {
+        $_SESSION['_last_activity'] = $now;
+    }
 }

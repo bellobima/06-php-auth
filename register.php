@@ -50,7 +50,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             } else {
                 $passwordHash = password_hash($password, PASSWORD_DEFAULT);
                 $insert = db()->prepare(
-                    'INSERT INTO users (name, email, password_hash) VALUES (:name, :email, :password_hash)'
+                    'INSERT INTO users (name, email, password_hash, last_login_at) '
+                    . 'VALUES (:name, :email, :password_hash, CURRENT_TIMESTAMP)'
                 );
 
                 try {
@@ -70,7 +71,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 if ($errors === []) {
                     session_regenerate_id(true);
                     $_SESSION['user_id'] = (int) db()->lastInsertId();
+                    $_SESSION['user_role'] = 'user';
                     $_SESSION['user_name'] = $name;
+                    $_SESSION['_last_activity'] = time();
                     unset($_SESSION['_old'], $_SESSION['_csrf_token']);
                     redirect('dashboard.php');
                 }
@@ -141,6 +144,7 @@ $successMessage = flash('success');
         </form>
 
         <p class="security-note">Your password is securely hashed before it is stored.</p>
+        <p class="security-note">Already registered? <a href="login.php">Sign in</a></p>
     </section>
 </main>
 </body>
