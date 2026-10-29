@@ -60,6 +60,11 @@ body {
     text-decoration: none;
 }
 
+.auth-card h2 {
+    margin: 28px 0 16px;
+    font-size: 1.1rem;
+}
+
 .site-nav a:hover,
 .button-link:hover {
     text-decoration: underline;

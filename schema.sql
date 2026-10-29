@@ -12,6 +12,7 @@ CREATE TABLE IF NOT EXISTS users (
     role VARCHAR(32) NOT NULL DEFAULT 'user',
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     last_login_at TIMESTAMP NULL DEFAULT NULL,
+    session_version INT UNSIGNED NOT NULL DEFAULT 0,
     PRIMARY KEY (id),
     UNIQUE KEY users_email_unique (email)
 ) ENGINE=InnoDB;

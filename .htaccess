@@ -1,0 +1,9 @@
+Options -Indexes
+
+<FilesMatch "^(schema|migrate_.*)\.sql$">
+    Require all denied
+</FilesMatch>
+
+<FilesMatch "^(config|db|auth|helpers|csrf|nav)\.php$">
+    Require all denied
+</FilesMatch>

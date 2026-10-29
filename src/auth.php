@@ -18,13 +18,20 @@ function current_user(): ?array
     }
 
     $statement = db()->prepare(
-        'SELECT id, name, email, role, created_at, last_login_at FROM users WHERE id = :id LIMIT 1'
+        'SELECT id, name, email, role, created_at, last_login_at, session_version '
+        . 'FROM users WHERE id = :id LIMIT 1'
     );
     $statement->execute(['id' => $userId]);
     $record = $statement->fetch();
 
     if ($record === false) {
-        unset($_SESSION['user_id'], $_SESSION['user_role'], $_SESSION['user_name']);
+        unset($_SESSION['user_id'], $_SESSION['user_role'], $_SESSION['user_name'], $_SESSION['session_version']);
+        return null;
+    }
+
+    $sessionVersion = $_SESSION['session_version'] ?? null;
+    if (!is_int($sessionVersion) || $sessionVersion !== (int) $record['session_version']) {
+        unset($_SESSION['user_id'], $_SESSION['user_role'], $_SESSION['user_name'], $_SESSION['session_version']);
         return null;
     }
 

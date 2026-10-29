@@ -14,6 +14,7 @@ function render_nav(): void
     ?>
     <nav class="site-nav" aria-label="Main navigation">
         <a href="<?= e($base . '/dashboard.php') ?>">Dashboard</a>
+        <a href="<?= e($base . '/profile.php') ?>">Profile</a>
         <?php if ($user['role'] === 'admin'): ?>
             <a href="<?= e($base . '/admin/users.php') ?>">Admin</a>
         <?php endif; ?>

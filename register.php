@@ -73,6 +73,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $_SESSION['user_id'] = (int) db()->lastInsertId();
                     $_SESSION['user_role'] = 'user';
                     $_SESSION['user_name'] = $name;
+                    $_SESSION['session_version'] = 0;
                     $_SESSION['_last_activity'] = time();
                     unset($_SESSION['_old'], $_SESSION['_csrf_token']);
                     redirect('dashboard.php');

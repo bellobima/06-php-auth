@@ -31,7 +31,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $errors[] = 'Too many attempts, try again in ' . $waitMinutes . ' minutes';
         } else {
             $statement = db()->prepare(
-                'SELECT id, name, email, password_hash, role FROM users WHERE email = :email LIMIT 1'
+                'SELECT id, name, email, password_hash, role, session_version '
+                . 'FROM users WHERE email = :email LIMIT 1'
             );
             $statement->execute(['email' => $email]);
             $user = $statement->fetch();
@@ -58,6 +59,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_SESSION['user_id'] = (int) $user['id'];
                 $_SESSION['user_role'] = (string) $user['role'];
                 $_SESSION['user_name'] = (string) $user['name'];
+                $_SESSION['session_version'] = (int) $user['session_version'];
                 $_SESSION['_last_activity'] = time();
                 unset($_SESSION['_old'], $_SESSION['_csrf_token']);
 
