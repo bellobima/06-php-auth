@@ -10,7 +10,9 @@ PHP 8 authentication example for XAMPP and MySQL. The application database is
    The schema creates the `users` and `login_attempts` tables.
 3. Configure the database constants in `config/config.php` for your local XAMPP
    MySQL account. The defaults are for a standard local XAMPP installation.
-4. Open `http://localhost/swd/06-php-auth/register.php` to create an account.
+4. Open `http://localhost/swd/06-php-auth/` to enter the application. The index
+   page sends signed-in users to the dashboard and guests to sign in. To create
+   the first account, open `http://localhost/swd/06-php-auth/register.php`.
 5. Promote the account that should administer the site from a terminal:
 
    ```powershell
