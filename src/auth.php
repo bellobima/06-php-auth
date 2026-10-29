@@ -65,9 +65,88 @@ function require_role(string $role = 'admin'): void
 
     if (($_SESSION['user_role'] ?? null) !== $role) {
         http_response_code(403);
-        echo 'Forbidden';
+        $scriptDirectory = str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? '/'));
+        $appBase = preg_replace('~/admin$~', '', $scriptDirectory);
+        $dashboardUrl = rtrim(is_string($appBase) ? $appBase : '', '/') . '/dashboard.php';
+        ?>
+        <!doctype html>
+        <html lang="en">
+        <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1">
+            <title>Access denied</title>
+            <link rel="stylesheet" href="../assets/auth.css">
+        </head>
+        <body>
+        <main class="auth-page">
+            <section class="auth-card" aria-labelledby="forbidden-title">
+                <div class="auth-heading">
+                    <p class="eyebrow">403 · Access denied</p>
+                    <h1 id="forbidden-title">This area is for admins</h1>
+                    <p class="muted">Your account does not have permission to view this page.</p>
+                </div>
+                <a class="button-link" href="<?= e($dashboardUrl) ?>">Return to your dashboard</a>
+            </section>
+        </main>
+        </body>
+        </html>
+        <?php
         exit;
     }
+}
+
+function login_throttle_minutes(string $email, string $ipAddress): ?int
+{
+    $query = db()->prepare(
+        'SELECT COUNT(*) AS failure_count, '
+        . 'CEIL((900 - TIMESTAMPDIFF(SECOND, MIN(attempted_at), CURRENT_TIMESTAMP)) / 60) AS wait_minutes '
+        . 'FROM login_attempts '
+        . 'WHERE email = :email AND was_successful = 0 '
+        . 'AND attempted_at >= CURRENT_TIMESTAMP - INTERVAL 15 MINUTE'
+    );
+    $query->execute(['email' => $email]);
+    $emailAttempts = $query->fetch();
+
+    $query = db()->prepare(
+        'SELECT COUNT(*) AS failure_count, '
+        . 'CEIL((900 - TIMESTAMPDIFF(SECOND, MIN(attempted_at), CURRENT_TIMESTAMP)) / 60) AS wait_minutes '
+        . 'FROM login_attempts '
+        . 'WHERE ip_address = :ip_address AND was_successful = 0 '
+        . 'AND attempted_at >= CURRENT_TIMESTAMP - INTERVAL 15 MINUTE'
+    );
+    $query->execute(['ip_address' => $ipAddress]);
+    $ipAttempts = $query->fetch();
+
+    $waitTimes = [];
+    foreach ([$emailAttempts, $ipAttempts] as $attempts) {
+        if ($attempts !== false && (int) $attempts['failure_count'] >= 5) {
+            $waitTimes[] = max(1, (int) $attempts['wait_minutes']);
+        }
+    }
+
+    return $waitTimes === [] ? null : max($waitTimes);
+}
+
+function record_failed_login(string $email, string $ipAddress): void
+{
+    $statement = db()->prepare(
+        'INSERT INTO login_attempts (email, ip_address, was_successful) VALUES (:email, :ip_address, 0)'
+    );
+    $statement->execute([
+        'email' => mb_substr($email, 0, 254),
+        'ip_address' => $ipAddress,
+    ]);
+}
+
+function clear_login_attempts(string $email, string $ipAddress): void
+{
+    $statement = db()->prepare(
+        'DELETE FROM login_attempts WHERE email = :email OR ip_address = :ip_address'
+    );
+    $statement->execute([
+        'email' => $email,
+        'ip_address' => $ipAddress,
+    ]);
 }
 
 function valid_intended_url(mixed $url): ?string

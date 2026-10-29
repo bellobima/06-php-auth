@@ -20,6 +20,7 @@ $lastLogin = $user['last_login_at'] === null
 <body>
 <main class="auth-page">
     <section class="auth-card" aria-labelledby="dashboard-title">
+        <?php render_nav(); ?>
         <div class="auth-heading">
             <p class="eyebrow">Account</p>
             <h1 id="dashboard-title">Welcome, <?= e((string) $user['name']) ?></h1>
@@ -32,10 +33,6 @@ $lastLogin = $user['last_login_at'] === null
             <div><dt>Member since</dt><dd><?= e((string) $user['created_at']) ?></dd></div>
             <div><dt>Last login</dt><dd><?= e($lastLogin) ?></dd></div>
         </dl>
-        <form method="post" action="logout.php">
-            <?= csrf_field() ?>
-            <button type="submit">Sign out</button>
-        </form>
     </section>
 </main>
 </body>

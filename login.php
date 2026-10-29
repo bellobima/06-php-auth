@@ -21,38 +21,50 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $password = is_string($passwordInput) ? $passwordInput : '';
         $_SESSION['_old'] = ['email' => $email];
 
-        $statement = db()->prepare(
-            'SELECT id, name, email, password_hash, role FROM users WHERE email = :email LIMIT 1'
-        );
-        $statement->execute(['email' => $email]);
-        $user = $statement->fetch();
+        $remoteAddress = $_SERVER['REMOTE_ADDR'] ?? '';
+        $ipAddress = is_string($remoteAddress) && filter_var($remoteAddress, FILTER_VALIDATE_IP) !== false
+            ? $remoteAddress
+            : '0.0.0.0';
+        $waitMinutes = login_throttle_minutes($email, $ipAddress);
 
-        if ($user === false || !password_verify($password, (string) $user['password_hash'])) {
-            $errors[] = 'Invalid email or password';
+        if ($waitMinutes !== null) {
+            $errors[] = 'Too many attempts, try again in ' . $waitMinutes . ' minutes';
         } else {
-            $passwordHash = (string) $user['password_hash'];
-            if (password_needs_rehash($passwordHash, PASSWORD_DEFAULT)) {
-                $passwordHash = password_hash($password, PASSWORD_DEFAULT);
-            }
-
-            $update = db()->prepare(
-                'UPDATE users SET password_hash = :password_hash, last_login_at = CURRENT_TIMESTAMP WHERE id = :id'
+            $statement = db()->prepare(
+                'SELECT id, name, email, password_hash, role FROM users WHERE email = :email LIMIT 1'
             );
-            $update->execute([
-                'password_hash' => $passwordHash,
-                'id' => (int) $user['id'],
-            ]);
+            $statement->execute(['email' => $email]);
+            $user = $statement->fetch();
 
-            session_regenerate_id(true);
-            $_SESSION['user_id'] = (int) $user['id'];
-            $_SESSION['user_role'] = (string) $user['role'];
-            $_SESSION['user_name'] = (string) $user['name'];
-            $_SESSION['_last_activity'] = time();
-            unset($_SESSION['_old'], $_SESSION['_csrf_token']);
+            if ($user === false || !password_verify($password, (string) $user['password_hash'])) {
+                record_failed_login($email, $ipAddress);
+                $errors[] = 'Invalid email or password';
+            } else {
+                $passwordHash = (string) $user['password_hash'];
+                if (password_needs_rehash($passwordHash, PASSWORD_DEFAULT)) {
+                    $passwordHash = password_hash($password, PASSWORD_DEFAULT);
+                }
 
-            $intendedUrl = valid_intended_url($_SESSION['_intended_url'] ?? null);
-            unset($_SESSION['_intended_url']);
-            redirect($intendedUrl ?? 'dashboard.php');
+                $update = db()->prepare(
+                    'UPDATE users SET password_hash = :password_hash, last_login_at = CURRENT_TIMESTAMP WHERE id = :id'
+                );
+                $update->execute([
+                    'password_hash' => $passwordHash,
+                    'id' => (int) $user['id'],
+                ]);
+                clear_login_attempts($email, $ipAddress);
+
+                session_regenerate_id(true);
+                $_SESSION['user_id'] = (int) $user['id'];
+                $_SESSION['user_role'] = (string) $user['role'];
+                $_SESSION['user_name'] = (string) $user['name'];
+                $_SESSION['_last_activity'] = time();
+                unset($_SESSION['_old'], $_SESSION['_csrf_token']);
+
+                $intendedUrl = valid_intended_url($_SESSION['_intended_url'] ?? null);
+                unset($_SESSION['_intended_url']);
+                redirect($intendedUrl ?? 'dashboard.php');
+            }
         }
     }
 }
